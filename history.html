@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Translation History</title>
+
+<style>
+
+body{
+margin:0;
+font-family:Segoe UI;
+background:linear-gradient(135deg,#43cea2,#185a9d);
+}
+
+.container{
+width:900px;
+margin:60px auto;
+background:white;
+padding:30px;
+border-radius:15px;
+box-shadow:0 10px 30px rgba(0,0,0,0.3);
+}
+
+h2{
+text-align:center;
+margin-bottom:25px;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+}
+
+th{
+background:#2c5d94;
+color:white;
+padding:10px;
+}
+
+td{
+padding:10px;
+border-bottom:1px solid #ddd;
+text-align:center;
+}
+
+button{
+margin-top:20px;
+padding:10px 20px;
+border:none;
+background:#ff4d5a;
+color:white;
+border-radius:8px;
+cursor:pointer;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>📜 Translation History</h2>
+
+<table>
+
+<thead>
+<tr>
+<th>Image Name</th>
+<th>Extracted Text</th>
+<th>English</th>
+<th>Hindi</th>
+<th>German</th>
+<th>Spanish</th>
+<th>French</th>
+<th>Date</th>
+</tr>
+</thead>
+
+<tbody id="historyTable">
+
+</tbody>
+
+</table>
+
+</div>
+
+<script>
+
+/* LOAD HISTORY */
+
+function loadHistory(){
+
+fetch("/history")
+
+.then(res => res.json())
+
+.then(data => {
+
+let table = document.getElementById("historyTable");
+
+table.innerHTML = "";
+
+data.forEach(item => {
+
+let row = `
+<tr>
+<td>${item.image_name}</td>
+<td>${item.extracted_text}</td>
+<td>${item.english}</td>
+<td>${item.hindi}</td>
+<td>${item.german}</td>
+<td>${item.spanish}</td>
+<td>${item.french}</td>
+<td>${item.timestamp}</td>
+</tr>
+`;
+
+table.innerHTML += row;
+
+});
+
+})
+
+.catch(error=>{
+console.log(error);
+});
+
+}
+
+loadHistory();
+
+</script>
+
+</body>
+</html>

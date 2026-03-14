@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>AI Image Translator</title>
+
+<style>
+
+body{
+margin:0;
+font-family:Arial, Helvetica, sans-serif;
+height:100vh;
+display:flex;
+justify-content:center;
+align-items:center;
+background:url("/static/bg.jpg");
+background-size:cover;
+background-position:center;
+}
+
+/* Glass container */
+
+.container{
+width:600px;
+padding:40px;
+border-radius:20px;
+text-align:center;
+background:rgba(255,255,255,0.15);
+backdrop-filter:blur(12px);
+box-shadow:0 10px 30px rgba(0,0,0,0.3);
+color:white;
+}
+
+/* Title */
+
+h1{
+font-size:50px;
+margin-bottom:5px;
+}
+
+h1 span{
+margin-left:15px;
+}
+
+h2{
+font-weight:normal;
+margin-bottom:30px;
+}
+
+/* Upload area */
+
+.uploadBox{
+background:rgba(255,255,255,0.2);
+padding:25px;
+border-radius:15px;
+}
+
+.uploadIcon{
+font-size:35px;
+margin-bottom:10px;
+}
+
+button{
+padding:10px 20px;
+border:none;
+background:#4a8df6;
+color:white;
+border-radius:8px;
+cursor:pointer;
+margin-left:10px;
+font-size:15px;
+}
+
+button:hover{
+background:#2f6fe0;
+}
+
+#preview{
+margin-top:15px;
+max-width:220px;
+border-radius:10px;
+display:none;
+}
+
+#outputBox{
+margin-top:20px;
+text-align:left;
+background:rgba(255,255,255,0.2);
+padding:15px;
+border-radius:10px;
+}
+
+.translationRow{
+display:flex;
+justify-content:space-between;
+padding:8px;
+background:white;
+color:black;
+margin:5px 0;
+border-radius:6px;
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+<div class="container">
+
+<h1>Hello <span>नमस्ते</span></h1>
+
+<h2>AI Image Translator</h2>
+
+<div class="uploadBox">
+
+<div class="uploadIcon">☁️</div>
+
+<p>Upload an image to detect objects and translate text</p>
+
+<input type="file" id="imageInput" onchange="previewImage()">
+
+<button onclick="translateImage()">Translate</button>
+
+<br>
+
+<img id="preview">
+
+</div>
+
+<div id="outputBox"></div>
+
+</div>
+
+
+<script>
+
+function previewImage(){
+
+let file=document.getElementById("imageInput").files[0]
+
+let preview=document.getElementById("preview")
+
+if(file){
+
+preview.src=URL.createObjectURL(file)
+
+preview.style.display="block"
+
+}
+
+}
+
+
+function translateImage(){
+
+let imageFile=document.getElementById("imageInput").files[0]
+
+if(!imageFile){
+
+alert("Upload image first")
+
+return
+
+}
+
+let formData=new FormData()
+
+formData.append("image",imageFile)
+
+document.getElementById("outputBox").innerHTML="Processing..."
+
+fetch("/translate",{
+
+method:"POST",
+body:formData
+
+})
+
+.then(response=>response.json())
+
+.then(data=>{
+
+let output=""
+
+if(data.objects.length>0){
+
+output+="<h3>Detected Objects</h3>"
+
+data.objects.forEach(obj=>{
+
+output+=obj.name+" (confidence "+obj.confidence+")<br>"
+
+})
+
+output+="<hr>"
+
+}
+
+if(data.text.length>0){
+
+output+="<h3>Detected Text</h3>"
+
+data.text.forEach(t=>{
+
+output+=t+"<br>"
+
+})
+
+output+="<hr>"
+
+}
+
+output+="<h3>Translations</h3>"
+
+for(let lang in data.translations){
+
+let text=data.translations[lang]
+
+output+=`
+
+<div class="translationRow">
+
+<span><b>${lang}</b> : ${text}</span>
+
+</div>
+
+`
+
+}
+
+document.getElementById("outputBox").innerHTML=output
+
+})
+
+}
+
+</script>
+
+</body>
+
+</html>
