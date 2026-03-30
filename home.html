@@ -1,244 +1,191 @@
 <!DOCTYPE html>
 <html>
-
 <head>
-
 <title>AI Image Translator</title>
 
 <style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial}
 
 body{
-margin:0;
-font-family:Arial, Helvetica, sans-serif;
 height:100vh;
+background:url("/static/bg.jpg") center/cover no-repeat;
 display:flex;
 justify-content:center;
 align-items:center;
-background:url("/static/bg.jpg");
-background-size:cover;
-background-position:center;
-}
-
-/* Glass container */
-
-.container{
-width:600px;
-padding:40px;
-border-radius:20px;
-text-align:center;
-background:rgba(255,255,255,0.15);
-backdrop-filter:blur(12px);
-box-shadow:0 10px 30px rgba(0,0,0,0.3);
 color:white;
 }
 
-/* Title */
-
-h1{
-font-size:50px;
-margin-bottom:5px;
-}
-
-h1 span{
-margin-left:15px;
-}
-
-h2{
-font-weight:normal;
-margin-bottom:30px;
-}
-
-/* Upload area */
-
-.uploadBox{
-background:rgba(255,255,255,0.2);
+.container{
+width:800px;
 padding:25px;
-border-radius:15px;
+border-radius:20px;
+background:rgba(255,255,255,0.1);
+backdrop-filter:blur(15px);
+box-shadow:0 0 40px rgba(0,0,0,0.5);
 }
 
-.uploadIcon{
-font-size:35px;
-margin-bottom:10px;
+h1{text-align:center;margin-bottom:15px}
+
+.upload-box{
+border:2px dashed rgba(255,255,255,0.4);
+padding:15px;
+border-radius:12px;
+text-align:center;
 }
 
 button{
-padding:10px 20px;
+margin:5px;
+padding:10px 18px;
 border:none;
-background:#4a8df6;
-color:white;
 border-radius:8px;
+background:linear-gradient(45deg,#4b7bec,#6c5ce7);
+color:white;
 cursor:pointer;
-margin-left:10px;
-font-size:15px;
-}
-
-button:hover{
-background:#2f6fe0;
 }
 
 #preview{
-margin-top:15px;
-max-width:220px;
-border-radius:10px;
-display:none;
-}
-
-#outputBox{
-margin-top:20px;
-text-align:left;
-background:rgba(255,255,255,0.2);
-padding:15px;
+display:block;
+margin:15px auto;
+max-width:350px;
 border-radius:10px;
 }
 
-.translationRow{
-display:flex;
-justify-content:space-between;
+.section{margin-top:15px}
+
+.card{
+background:rgba(0,0,0,0.4);
+padding:10px;
+border-radius:8px;
+margin-top:5px;
+}
+
+.translation{
+background:rgba(0,0,0,0.5);
 padding:8px;
-background:white;
-color:black;
-margin:5px 0;
+margin-top:5px;
 border-radius:6px;
 }
 
+#audio button{
+background:linear-gradient(45deg,#00c9ff,#92fe9d);
+}
 </style>
-
 </head>
-
 
 <body>
 
 <div class="container">
 
-<h1>Hello <span>नमस्ते</span></h1>
+<h1>AI Image Translator</h1>
 
-<h2>AI Image Translator</h2>
+<div class="upload-box">
+<b>Upload OR Capture Image</b><br><br>
+<input type="file" id="imageInput"><br>
+<button onclick="startCamera()">Open Camera</button>
+<button onclick="capture()">Capture</button>
+</div>
 
-<div class="uploadBox">
-
-<div class="uploadIcon">☁️</div>
-
-<p>Upload an image to detect objects and translate text</p>
-
-<input type="file" id="imageInput" onchange="previewImage()">
-
-<button onclick="translateImage()">Translate</button>
-
-<br>
+<video id="camera" autoplay style="display:none;"></video>
+<canvas id="canvas" style="display:none;"></canvas>
 
 <img id="preview">
 
+<div style="text-align:center">
+<button onclick="upload()">Translate</button>
 </div>
 
-<div id="outputBox"></div>
+<div id="status" style="text-align:center;margin-top:8px;"></div>
 
+<div class="section">
+<b>Detected Objects</b>
+<div id="objects" class="card">-</div>
 </div>
 
+<div class="section">
+<b>Extracted Text</b>
+<div id="text" class="card">-</div>
+</div>
+
+<div class="section">
+<b>Translations</b>
+<div id="translations"></div>
+</div>
+
+<div class="section">
+<b>🔊 Voice Output</b>
+<div id="audio"></div>
+</div>
+
+</div>
 
 <script>
+let stream;
 
-function previewImage(){
-
-let file=document.getElementById("imageInput").files[0]
-
-let preview=document.getElementById("preview")
-
-if(file){
-
-preview.src=URL.createObjectURL(file)
-
-preview.style.display="block"
-
+async function startCamera(){
+stream=await navigator.mediaDevices.getUserMedia({video:true});
+document.getElementById("camera").srcObject=stream;
 }
 
+async function capture(){
+let video=document.getElementById("camera");
+let canvas=document.getElementById("canvas");
+let ctx=canvas.getContext("2d");
+
+canvas.width=video.videoWidth;
+canvas.height=video.videoHeight;
+ctx.drawImage(video,0,0);
+
+document.getElementById("preview").src=canvas.toDataURL("image/jpeg");
+
+canvas.toBlob(blob=>processImage(blob),"image/jpeg");
 }
 
-
-function translateImage(){
-
-let imageFile=document.getElementById("imageInput").files[0]
-
-if(!imageFile){
-
-alert("Upload image first")
-
-return
-
+function upload(){
+let file=document.getElementById("imageInput").files[0];
+if(!file) return alert("Select image");
+document.getElementById("preview").src=URL.createObjectURL(file);
+processImage(file);
 }
 
-let formData=new FormData()
+async function processImage(file){
 
-formData.append("image",imageFile)
+document.getElementById("status").innerText="Processing...";
 
-document.getElementById("outputBox").innerHTML="Processing..."
+let formData=new FormData();
+formData.append("image",file);
 
-fetch("/translate",{
+let res=await fetch("/process",{method:"POST",body:formData});
+let data=await res.json();
 
-method:"POST",
-body:formData
+document.getElementById("status").innerText="Done";
 
-})
+document.getElementById("objects").innerText =
+data.objects.length ? data.objects.join(", ") : "No objects";
 
-.then(response=>response.json())
+document.getElementById("text").innerText =
+data.text || "No text found";
 
-.then(data=>{
-
-let output=""
-
-if(data.objects.length>0){
-
-output+="<h3>Detected Objects</h3>"
-
-data.objects.forEach(obj=>{
-
-output+=obj.name+" (confidence "+obj.confidence+")<br>"
-
-})
-
-output+="<hr>"
-
-}
-
-if(data.text.length>0){
-
-output+="<h3>Detected Text</h3>"
-
-data.text.forEach(t=>{
-
-output+=t+"<br>"
-
-})
-
-output+="<hr>"
-
-}
-
-output+="<h3>Translations</h3>"
+let tdiv=document.getElementById("translations");
+tdiv.innerHTML="";
 
 for(let lang in data.translations){
-
-let text=data.translations[lang]
-
-output+=`
-
-<div class="translationRow">
-
-<span><b>${lang}</b> : ${text}</span>
-
-</div>
-
-`
-
+let box=document.createElement("div");
+box.className="translation";
+box.innerHTML="<b>"+lang.toUpperCase()+":</b><br>"+data.translations[lang];
+tdiv.appendChild(box);
 }
 
-document.getElementById("outputBox").innerHTML=output
+let adiv=document.getElementById("audio");
+adiv.innerHTML="";
 
-})
-
+for(let lang in data.audio){
+let btn=document.createElement("button");
+btn.innerText="🔊 "+lang;
+btn.onclick=()=>new Audio("/audio/"+data.audio[lang]).play();
+adiv.appendChild(btn);
 }
-
+}
 </script>
 
 </body>
-
 </html>
